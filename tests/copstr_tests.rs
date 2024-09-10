@@ -151,10 +151,32 @@ fn test_utf8_replace() -> Result<()> {
 }
 
 #[test]
+fn test_utf8_tryfrom_str() -> Result<()> {
+    let result = Str::try_from("basic")?;
+    assert_matches!(result.as_str(), "basic");
+    Ok(())
+}
+
+#[test]
+fn test_utf8_fromstr() -> Result<()> {
+    let result = "basic".parse::<Str>()?;
+    assert_matches!(result.as_str(), "basic");
+    Ok(())
+}
+
+#[test]
 fn test_utf8_overflow_tryfrom() -> Result<()> {
     let result = Str::try_from("basics".as_bytes());
     eprintln!("{}", result.clone().unwrap_err());
     assert_matches!(result, Err(copstr::Error::Overflow(_)));
+    Ok(())
+}
+
+#[test]
+fn test_utf8_overflow_fromstr() -> Result<()> {
+    let result = "basics".parse::<Str>();
+    eprintln!("{}", result.clone().unwrap_err());
+    assert_matches!(result, Err(copstr::ErrorOverflow));
     Ok(())
 }
 
@@ -176,8 +198,25 @@ fn test_utf8_invalid_replace() -> Result<()> {
 }
 
 #[test]
+fn test_hash() -> Result<()> {
+    let mut set = std::collections::HashSet::<Str>::new();
+    set.insert(Str::new("basic")?);
+    assert_eq!(set.into_iter().collect::<Vec<_>>(), &[Str::new("basic")?]);
+    Ok(())
+}
+
+#[test]
 fn test_fromiter() -> Result<()> {
     assert_eq!("basic".chars().collect::<Str>(), Str::new("basic")?);
     assert_eq!("strings".chars().collect::<Str>(), Str::new("strin")?);
+    Ok(())
+}
+
+#[test]
+fn test_const() -> Result<()> {
+    const TEST_U8: Str = Str::new_const_u8(b"test");
+    assert_eq!(TEST_U8.as_str(), "test");
+    const TEST: Str = Str::new_const("test");
+    assert_eq!(TEST.as_str(), "test");
     Ok(())
 }
