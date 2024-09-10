@@ -9,7 +9,7 @@ use std::io::BufRead;
 use super::core::*;
 use super::input::*;
 
-pub fn eval(_params: &Params, node: &Node) -> Qa {
+pub fn eval(_params: &Params, node: &Node) -> Pos {
     let dir = node.grid[node.indy.qa]
         .enter(&node.indy.qr)
         .expect("invalid indy direction");

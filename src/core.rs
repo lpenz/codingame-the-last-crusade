@@ -11,14 +11,15 @@ pub const MAX_WIDTH: u16 = 20;
 pub const MAX_HEIGHT: u16 = 20;
 
 pub type Sqrid = crate::sqrid_create!(MAX_WIDTH, MAX_HEIGHT, false);
-pub type Qa = crate::qa_create!(Sqrid);
-pub type Qr = crate::Qr;
+pub type Pos = crate::pos_create!(Sqrid);
+pub type Dir = crate::Dir;
 pub type Gridbool = crate::gridbool_create!(Sqrid);
 
 /* Cell *************************************************************/
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
 pub enum Cell {
+    #[default]
     Type0,
     Type1,
     Type2,
@@ -33,12 +34,6 @@ pub enum Cell {
     Type11,
     Type12,
     Type13,
-}
-
-impl Default for Cell {
-    fn default() -> Cell {
-        Cell::Type0
-    }
 }
 
 impl From<Cell> for char {
@@ -88,67 +83,67 @@ impl fmt::Display for Cell {
 }
 
 impl Cell {
-    pub fn enter(&self, dir: &Qr) -> Option<Qr> {
+    pub fn enter(&self, dir: &Dir) -> Option<Dir> {
         let dir = *dir;
-        if dir == Qr::N {
+        if dir == Dir::N {
             return None;
         }
         match self {
             Cell::Type0 => None,
-            Cell::Type1 => Some(Qr::S),
+            Cell::Type1 => Some(Dir::S),
             Cell::Type2 => match dir {
-                Qr::E => Some(Qr::E),
-                Qr::W => Some(Qr::W),
+                Dir::E => Some(Dir::E),
+                Dir::W => Some(Dir::W),
                 _ => None,
             },
             Cell::Type3 => match dir {
-                Qr::S => Some(Qr::S),
+                Dir::S => Some(Dir::S),
                 _ => None,
             },
             Cell::Type4 => match dir {
-                Qr::S => Some(Qr::W),
-                Qr::W => Some(Qr::S),
+                Dir::S => Some(Dir::W),
+                Dir::W => Some(Dir::S),
                 _ => None,
             },
             Cell::Type5 => match dir {
-                Qr::S => Some(Qr::E),
-                Qr::E => Some(Qr::S),
+                Dir::S => Some(Dir::E),
+                Dir::E => Some(Dir::S),
                 _ => None,
             },
             Cell::Type6 => match dir {
-                Qr::W => Some(Qr::W),
-                Qr::E => Some(Qr::E),
+                Dir::W => Some(Dir::W),
+                Dir::E => Some(Dir::E),
                 _ => None,
             },
             Cell::Type7 => match dir {
-                Qr::S => Some(Qr::S),
-                Qr::W => Some(Qr::S),
+                Dir::S => Some(Dir::S),
+                Dir::W => Some(Dir::S),
                 _ => None,
             },
             Cell::Type8 => match dir {
-                Qr::W => Some(Qr::S),
-                Qr::E => Some(Qr::S),
+                Dir::W => Some(Dir::S),
+                Dir::E => Some(Dir::S),
                 _ => None,
             },
             Cell::Type9 => match dir {
-                Qr::S => Some(Qr::S),
-                Qr::E => Some(Qr::S),
+                Dir::S => Some(Dir::S),
+                Dir::E => Some(Dir::S),
                 _ => None,
             },
             Cell::Type10 => match dir {
-                Qr::S => Some(Qr::W),
+                Dir::S => Some(Dir::W),
                 _ => None,
             },
             Cell::Type11 => match dir {
-                Qr::S => Some(Qr::E),
+                Dir::S => Some(Dir::E),
                 _ => None,
             },
             Cell::Type12 => match dir {
-                Qr::W => Some(Qr::S),
+                Dir::W => Some(Dir::S),
                 _ => None,
             },
             Cell::Type13 => match dir {
-                Qr::E => Some(Qr::S),
+                Dir::E => Some(Dir::S),
                 _ => None,
             },
         }
@@ -240,15 +235,15 @@ impl fmt::Display for Rotation {
 
 #[derive(Debug, Default, Clone, Copy)]
 pub struct Entity {
-    pub qa: Qa,
-    pub qr: Qr,
+    pub qa: Pos,
+    pub qr: Dir,
 }
 
 impl Entity {
     pub fn step(&self, node: &Node) -> Option<Entity> {
         let cell = node.grid[self.qa];
         if let Some(qr) = cell.enter(&self.qr) {
-            if let Some(qa) = self.qa + qr {
+            if let Ok(qa) = self.qa + qr {
                 return Some(Entity { qa, qr });
             }
         }
@@ -269,8 +264,8 @@ impl fmt::Display for Entity {
     }
 }
 
-impl AsRef<Qa> for Entity {
-    fn as_ref(&self) -> &Qa {
+impl AsRef<Pos> for Entity {
+    fn as_ref(&self) -> &Pos {
         &self.qa
     }
 }
@@ -295,15 +290,15 @@ impl<'a> Iterator for EntityPathIter<'a> {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Action {
     Wait,
-    Rotate { qa: Qa, rot: Rotation },
+    Rotate { qa: Pos, rot: Rotation },
 }
 
 impl Action {
-    pub fn new(qa: Qa, rot: Rotation) -> Action {
+    pub fn new(qa: Pos, rot: Rotation) -> Action {
         Action::Rotate { qa, rot }
     }
 
-    pub fn qa(&self) -> Option<Qa> {
+    pub fn qa(&self) -> Option<Pos> {
         match self {
             Action::Rotate { qa, rot: _ } => Some(*qa),
             _ => None,
@@ -360,7 +355,7 @@ pub type Rocks = AndexableArray<IRock, Option<Entity>, { IRock::SIZE }>;
 pub struct Params {
     pub width: u16,
     pub height: u16,
-    pub exit: Qa,
+    pub exit: Pos,
     pub frozen: Gridbool,
     pub grid0: crate::grid_create!(Sqrid, Cell),
 }
@@ -428,8 +423,8 @@ pub fn check_indy_path(params: &Params, node: &Node, indy: &Entity) -> bool {
 #[derive(PartialEq, Eq, Copy, Clone, Debug)]
 pub enum Destiny {
     InvalidAction,
-    Wall(Qa),
-    Rock(IRock, Qa),
+    Wall(Pos),
+    Rock(IRock, Pos),
     Victory,
 }
 

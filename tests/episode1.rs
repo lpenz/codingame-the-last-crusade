@@ -2,7 +2,6 @@
 // This file is subject to the terms and conditions defined in
 // file 'LICENSE', which is part of this source code package.
 
-use std::convert::TryFrom;
 use std::iter;
 
 use anyhow::Result;
@@ -32,35 +31,35 @@ fn test_input() -> Result<()> {
     let mut node = Node::default();
     input_first(&mut it_lines, &mut params, &mut node)?;
     let inputs = vec![
-        ("0 0 TOP", Qa::try_from((0, 1)).unwrap()),
-        ("0 1 TOP", Qa::try_from((1, 1)).unwrap()),
-        ("1 1 LEFT", Qa::try_from((1, 2)).unwrap()),
-        ("1 2 TOP", Qa::try_from((2, 2)).unwrap()),
-        ("2 2 LEFT", Qa::try_from((3, 2)).unwrap()),
-        ("3 2 LEFT", Qa::try_from((4, 2)).unwrap()),
-        ("4 2 LEFT", Qa::try_from((5, 2)).unwrap()),
-        ("5 2 LEFT", Qa::try_from((6, 2)).unwrap()),
-        ("6 2 LEFT", Qa::try_from((7, 2)).unwrap()),
-        ("7 2 LEFT", Qa::try_from((8, 2)).unwrap()),
-        ("8 2 LEFT", Qa::try_from((8, 3)).unwrap()),
-        ("8 3 TOP", Qa::try_from((8, 4)).unwrap()),
-        ("8 4 TOP", Qa::try_from((7, 4)).unwrap()),
-        ("7 4 RIGHT", Qa::try_from((6, 4)).unwrap()),
-        ("6 4 RIGHT", Qa::try_from((6, 5)).unwrap()),
-        ("6 5 TOP", Qa::try_from((6, 6)).unwrap()),
-        ("6 6 TOP", Qa::try_from((7, 6)).unwrap()),
-        ("7 6 LEFT", Qa::try_from((8, 6)).unwrap()),
-        ("8 6 LEFT", Qa::try_from((9, 6)).unwrap()),
-        ("9 6 LEFT", Qa::try_from((10, 6)).unwrap()),
-        ("9 7 RIGHT", Qa::try_from((8, 7)).unwrap()),
-        ("8 7 RIGHT", Qa::try_from((7, 7)).unwrap()),
-        ("7 7 RIGHT", Qa::try_from((7, 8)).unwrap()),
-        ("7 8 TOP", Qa::try_from((6, 8)).unwrap()),
-        ("6 8 RIGHT", Qa::try_from((5, 8)).unwrap()),
-        ("5 8 RIGHT", Qa::try_from((4, 8)).unwrap()),
-        ("4 8 RIGHT", Qa::try_from((3, 8)).unwrap()),
-        ("3 8 RIGHT", Qa::try_from((2, 8)).unwrap()),
-        ("2 8 RIGHT", Qa::try_from((2, 9)).unwrap()),
+        ("0 0 TOP", Pos::try_from((0, 1)).unwrap()),
+        ("0 1 TOP", Pos::try_from((1, 1)).unwrap()),
+        ("1 1 LEFT", Pos::try_from((1, 2)).unwrap()),
+        ("1 2 TOP", Pos::try_from((2, 2)).unwrap()),
+        ("2 2 LEFT", Pos::try_from((3, 2)).unwrap()),
+        ("3 2 LEFT", Pos::try_from((4, 2)).unwrap()),
+        ("4 2 LEFT", Pos::try_from((5, 2)).unwrap()),
+        ("5 2 LEFT", Pos::try_from((6, 2)).unwrap()),
+        ("6 2 LEFT", Pos::try_from((7, 2)).unwrap()),
+        ("7 2 LEFT", Pos::try_from((8, 2)).unwrap()),
+        ("8 2 LEFT", Pos::try_from((8, 3)).unwrap()),
+        ("8 3 TOP", Pos::try_from((8, 4)).unwrap()),
+        ("8 4 TOP", Pos::try_from((7, 4)).unwrap()),
+        ("7 4 RIGHT", Pos::try_from((6, 4)).unwrap()),
+        ("6 4 RIGHT", Pos::try_from((6, 5)).unwrap()),
+        ("6 5 TOP", Pos::try_from((6, 6)).unwrap()),
+        ("6 6 TOP", Pos::try_from((7, 6)).unwrap()),
+        ("7 6 LEFT", Pos::try_from((8, 6)).unwrap()),
+        ("8 6 LEFT", Pos::try_from((9, 6)).unwrap()),
+        ("9 6 LEFT", Pos::try_from((10, 6)).unwrap()),
+        ("9 7 RIGHT", Pos::try_from((8, 7)).unwrap()),
+        ("8 7 RIGHT", Pos::try_from((7, 7)).unwrap()),
+        ("7 7 RIGHT", Pos::try_from((7, 8)).unwrap()),
+        ("7 8 TOP", Pos::try_from((6, 8)).unwrap()),
+        ("6 8 RIGHT", Pos::try_from((5, 8)).unwrap()),
+        ("5 8 RIGHT", Pos::try_from((4, 8)).unwrap()),
+        ("4 8 RIGHT", Pos::try_from((3, 8)).unwrap()),
+        ("3 8 RIGHT", Pos::try_from((2, 8)).unwrap()),
+        ("2 8 RIGHT", Pos::try_from((2, 9)).unwrap()),
     ];
     for i in &inputs {
         input_ep1(&mut iter::once(Ok(i.0.to_string())), &mut params, &mut node)?;

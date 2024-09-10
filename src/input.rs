@@ -2,8 +2,6 @@
 // This file is subject to the terms and conditions defined in
 // file 'LICENSE', which is part of this source code package.
 
-use std::convert::TryFrom;
-use std::convert::TryInto;
 use std::io;
 use std::str::FromStr;
 
@@ -44,9 +42,9 @@ impl FromStr for Entity {
         Ok(Entity {
             qa: (v[0].parse::<u16>()?, v[1].parse::<u16>()?).try_into()?,
             qr: match v[2] {
-                "TOP" => Qr::S,
-                "LEFT" => Qr::E,
-                "RIGHT" => Qr::W,
+                "TOP" => Dir::S,
+                "LEFT" => Dir::E,
+                "RIGHT" => Dir::W,
                 _ => {
                     return Err(Error::InvalidInput);
                 }
@@ -81,15 +79,15 @@ pub fn input_first(
         for (x, cellnum) in line.split(' ').enumerate() {
             let firstchar = cellnum.chars().next().unwrap();
             if firstchar == '-' {
-                let qa = Qa::try_from((x as u16, y))?;
-                params.frozen.set_t(&qa);
+                let qa = Pos::try_from((x as u16, y))?;
+                params.frozen.set_t(qa);
             }
             gridline[x] = cellnum.parse()?;
         }
     }
     node.grid = params.grid0;
     let line = lineread(lineit)?;
-    params.exit = Qa::try_from((line.parse()?, params.height - 1))?;
+    params.exit = Pos::try_from((line.parse()?, params.height - 1))?;
     Ok(())
 }
 

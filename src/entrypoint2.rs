@@ -14,7 +14,6 @@ pub fn solve_helper(
     params: &Params,
     node0: &Node,
     focus0: Entity,
-    iturn: usize,
     steps: &mut VecDeque<Action>,
 ) -> bool {
     if check_indy_path(params, node0, &focus0) {
@@ -28,7 +27,7 @@ pub fn solve_helper(
             node.apply(a);
         }
         if let Some(focus) = focus0.step(&node) {
-            if solve_helper(params, &node, focus, iturn + 1, steps) {
+            if solve_helper(params, &node, focus, steps) {
                 for a in &actions {
                     steps.push_front(*a);
                 }
@@ -44,7 +43,7 @@ pub fn rock_solve(
     node: &Node,
     mut steps: VecDeque<Action>,
     irock: IRock,
-    qa_collision: Qa,
+    qa_collision: Pos,
 ) -> Option<Action> {
     for focus in node.rock[irock].unwrap().iter(node) {
         if focus.qa == qa_collision {
@@ -65,7 +64,7 @@ pub fn rock_solve(
 pub fn solve(params: &Params, node: &Node) -> Option<Action> {
     let mut stepsbase = VecDeque::new();
     let focus = node.indy.step(node)?;
-    if !solve_helper(params, node, focus, 0, &mut stepsbase) {
+    if !solve_helper(params, node, focus, &mut stepsbase) {
         return None;
     }
     stepsbase.push_front(Action::Wait);

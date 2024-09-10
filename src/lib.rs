@@ -3,10 +3,9 @@
 // file 'LICENSE', which is part of this source code package.
 
 pub mod sqrid;
-pub use self::sqrid::*;
+pub use self::sqrid::{Dir, Grid, Gridbool, Pos, Sqrid};
 
 pub mod andex;
-pub use self::andex::*;
 
 pub mod core;
 pub mod entrypoint1;
