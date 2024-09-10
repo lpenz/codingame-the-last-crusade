@@ -2,21 +2,24 @@
 // This file is subject to the terms and conditions defined in
 // file 'LICENSE', which is part of this source code package.
 
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
+
 use sqrid;
 
 use anyhow::anyhow;
 use anyhow::Result;
 use std::convert::TryFrom;
 
-type Qa = sqrid::Qa<5, 3>;
+type Pos = sqrid::Pos<5, 3>;
 type Grid = sqrid::Grid<i32, 5, 3, 15>;
-type _QaScale = sqrid::Qa<0xffff, 0xffff>;
-type _GridScale = sqrid::grid_create!(_QaScale, i32);
+type _PosScale = sqrid::Pos<0xffff, 0xffff>;
+type _GridScale = sqrid::grid_create!(_PosScale, i32);
 
-type Qa3 = sqrid::Qa<3, 3>;
-type Grid3 = sqrid::grid_create!(Qa3, i32);
-type Qa5 = sqrid::Qa<5, 5>;
-type Grid5 = sqrid::grid_create!(Qa5, i32);
+type Pos3 = sqrid::Pos<3, 3>;
+type Grid3 = sqrid::grid_create!(Pos3, i32);
+type Pos5 = sqrid::Pos<5, 5>;
+type Grid5 = sqrid::grid_create!(Pos5, i32);
 
 #[test]
 fn test_basic() -> Result<()> {
@@ -24,9 +27,9 @@ fn test_basic() -> Result<()> {
     for (i, element) in (&mut grid).into_iter().enumerate() {
         *element = i as i32;
     }
-    for (i, qa) in Qa::iter().enumerate() {
-        assert_eq!(grid[qa], i as i32);
-        assert_eq!(grid[&qa], usize::from(qa) as i32);
+    for (i, pos) in Pos::iter().enumerate() {
+        assert_eq!(grid[pos], i as i32);
+        assert_eq!(grid[&pos], usize::from(pos) as i32);
     }
     let grid2 = grid.into_iter().collect::<Grid>();
     assert_eq!(grid, grid2);
@@ -41,10 +44,10 @@ fn test_basic2() -> Result<()> {
     for element in &mut grid {
         *element = 1;
     }
-    let mut qa = Qa::try_from((1, 0))?;
-    grid[&qa] = 5;
-    qa = qa.next().ok_or(anyhow!("next failed"))?;
-    grid[qa] = 6;
+    let mut pos = Pos::try_from((1, 0))?;
+    grid[&pos] = 5;
+    pos = pos.next().ok_or(anyhow!("next failed"))?;
+    grid[pos] = 6;
     println!("{}", grid);
     assert_eq!(
         grid.into_inner(),
@@ -82,10 +85,10 @@ fn test_from_iter_ok() -> Result<()> {
 }
 
 #[test]
-fn test_into_from_iter_qa() -> Result<()> {
+fn test_into_from_iter_pos() -> Result<()> {
     let grid = (0..15_i32).collect::<Grid>();
     let mut grid2 = Grid::default();
-    grid2.extend(grid.iter_qa());
+    grid2.extend(grid.iter_pos());
     assert_eq!(grid.as_ref(), grid2.as_ref());
     Ok(())
 }
@@ -119,9 +122,26 @@ fn test_from_iter_overflow_refs() {
 }
 
 #[test]
+fn test_from_vecvec() -> Result<()> {
+    let v = vec![vec![1, 2, 3], vec![4, 5], vec![6]];
+    let grid = Grid3::try_from(v)?;
+    assert_eq!(grid.as_ref(), &[1, 2, 3, 4, 5, 0, 6, 0, 0]);
+    let v = vec![vec![1, 2, 3], vec![4, 5], vec![6], vec![]];
+    assert_eq!(Grid3::try_from(v), Err(sqrid::Error::OutOfBounds));
+    let v = vec![vec![1, 2, 3], vec![4, 3, 2, 1], vec![6]];
+    assert_eq!(Grid3::try_from(v), Err(sqrid::Error::OutOfBounds));
+    let v = vec![vec![1]];
+    assert_eq!(
+        Grid3::try_from(v)?.into_inner(),
+        [1, 0, 0, 0, 0, 0, 0, 0, 0]
+    );
+    Ok(())
+}
+
+#[test]
 fn test_line_mut() -> Result<()> {
     let mut grid = Grid::default();
-    grid.extend(Qa::iter().map(|qa| (qa, <(i32, i32)>::from(qa).1)));
+    grid.extend(Pos::iter().map(|pos| (pos, <(i32, i32)>::from(pos).1)));
     assert_eq!(grid.line(1), [1, 1, 1, 1, 1]);
     assert_eq!(grid.line_mut(2), [2, 2, 2, 2, 2]);
     grid.as_mut()[0] = 7;
@@ -133,14 +153,30 @@ fn test_line_mut() -> Result<()> {
 }
 
 #[test]
-fn test_qa_iter_ref() -> Result<()> {
-    let v = vec![(Qa::try_from((1, 0))?, 5), (Qa::try_from((2, 0))?, 7)];
+fn test_pos_iter_ref() -> Result<()> {
+    let v = vec![(Pos::try_from((1, 0))?, 5), (Pos::try_from((2, 0))?, 7)];
     let mut grid = Grid::default();
     grid.extend((&v).iter());
     assert_eq!(
         grid.into_inner(),
         [0, 5, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     );
+    Ok(())
+}
+
+#[test]
+fn test_traits() -> Result<()> {
+    let g0 = (1..10).collect::<Grid3>();
+    let mut g1 = g0.clone();
+    g1.flip_h();
+    assert!(g0 < g1);
+    assert!(g1 > g0);
+    assert!(g0 == g0);
+    assert!(g0 != g1);
+    assert!(g0 != g1);
+    let mut s = DefaultHasher::new();
+    g0.hash(&mut s);
+    s.finish();
     Ok(())
 }
 
