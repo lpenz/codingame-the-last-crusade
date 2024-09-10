@@ -16,7 +16,9 @@ use std::convert;
 use std::convert::TryFrom;
 use std::error;
 use std::fmt;
+use std::hash::{Hash, Hasher};
 use std::marker::PhantomData;
+use std::mem::MaybeUninit;
 use std::num;
 use std::ops;
 use std::str;
@@ -87,7 +89,8 @@ impl<M, const SIZE: usize> Andex<M, SIZE> {
     pub const fn new<const N: usize>() -> Self {
         // Trick for compile-time check of N:
         const ASSERT: [(); 1] = [(); 1];
-        let _ = ASSERT[(N >= SIZE) as usize];
+        #[allow(clippy::no_effect)]
+        ASSERT[(N >= SIZE) as usize];
         Andex(PhantomData, N)
     }
 
@@ -164,6 +167,12 @@ impl<M, const SIZE: usize> Clone for Andex<M, SIZE> {
 }
 
 impl<M, const SIZE: usize> Copy for Andex<M, SIZE> {}
+
+impl<M, const SIZE: usize> Hash for Andex<M, SIZE> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.1.hash(state);
+    }
+}
 
 impl<M, const SIZE: usize> Default for Andex<M, SIZE> {
     fn default() -> Self {
@@ -309,8 +318,19 @@ impl<M, const SIZE: usize> Iterator for AndexIterator<M, SIZE> {
 /// // Print the whole array
 /// println!("{:?}", myu32);
 /// ```
-#[derive(Debug)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct AndexableArray<A, Item, const SIZE: usize>(PhantomData<A>, [Item; SIZE]);
+
+impl<A, Item: fmt::Debug, const SIZE: usize> fmt::Debug for AndexableArray<A, Item, SIZE> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "AndexableArray<{}>({:?})",
+            std::any::type_name::<Item>(),
+            self.1
+        )
+    }
+}
 
 /// Helper macro that creates an AndexableArray from an Andex
 ///
@@ -335,7 +355,7 @@ macro_rules! andex_array {
 }
 
 impl<A, Item, const SIZE: usize> AndexableArray<A, Item, SIZE> {
-    /// Returns an iterator over the `AnexableArray`.
+    /// Returns an iterator over the `&AndexableArray`.
     pub fn iter(&self) -> impl Iterator<Item = &Item> {
         self.1.iter()
     }
@@ -343,7 +363,7 @@ impl<A, Item, const SIZE: usize> AndexableArray<A, Item, SIZE> {
 
 impl<A, Item: Copy, const SIZE: usize> Clone for AndexableArray<A, Item, SIZE> {
     fn clone(&self) -> Self {
-        AndexableArray::<A, Item, SIZE>::from(self.1)
+        *self
     }
 }
 
@@ -434,13 +454,13 @@ where
     }
 }
 
-// impl<A, Item, const SIZE: usize> IntoIterator for AndexableArray<A, Item, SIZE> {
-//     type Item = Item;
-//     type IntoIter = std::array::IntoIter<Item, SIZE>;
-//     fn into_iter(self) -> Self::IntoIter {
-//         IntoIterator::into_iter(self.1)
-//     }
-// }
+impl<A, Item, const SIZE: usize> IntoIterator for AndexableArray<A, Item, SIZE> {
+    type Item = Item;
+    type IntoIter = std::array::IntoIter<Item, SIZE>;
+    fn into_iter(self) -> Self::IntoIter {
+        IntoIterator::into_iter(self.1)
+    }
+}
 
 impl<'a, A, Item, const SIZE: usize> IntoIterator for &'a AndexableArray<A, Item, SIZE> {
     type Item = &'a Item;
@@ -460,17 +480,13 @@ impl<'a, A, Item, const SIZE: usize> IntoIterator for &'a mut AndexableArray<A, 
 
 impl<A, Item, const SIZE: usize> core::iter::FromIterator<Item> for AndexableArray<A, Item, SIZE> {
     fn from_iter<I: core::iter::IntoIterator<Item = Item>>(intoiter: I) -> Self {
-        let mut andexable = AndexableArray::<A, Item, SIZE>(
-            PhantomData,
-            #[allow(clippy::uninit_assumed_init)]
-            unsafe {
-                std::mem::MaybeUninit::uninit().assume_init()
-            },
-        );
+        let mut andexable = AndexableArray::<A, MaybeUninit<Item>, SIZE>(PhantomData, unsafe {
+            std::mem::MaybeUninit::uninit().assume_init()
+        });
         let mut iter = intoiter.into_iter();
         for item in &mut andexable {
             if let Some(fromiter) = iter.next() {
-                *item = fromiter;
+                item.write(fromiter);
             } else {
                 panic!("iterator too short for andexable type");
             }
@@ -478,7 +494,8 @@ impl<A, Item, const SIZE: usize> core::iter::FromIterator<Item> for AndexableArr
         if iter.next().is_some() {
             panic!("iterator too long for andexable type");
         }
-        andexable
+
+        unsafe { std::mem::transmute_copy::<_, AndexableArray<A, Item, SIZE>>(&andexable) }
     }
 }
 
@@ -486,17 +503,13 @@ impl<'a, A, Item: 'a + Copy, const SIZE: usize> core::iter::FromIterator<&'a Ite
     for AndexableArray<A, Item, SIZE>
 {
     fn from_iter<I: core::iter::IntoIterator<Item = &'a Item>>(intoiter: I) -> Self {
-        let mut andexable = AndexableArray::<A, Item, SIZE>(
-            PhantomData,
-            #[allow(clippy::uninit_assumed_init)]
-            unsafe {
-                std::mem::MaybeUninit::uninit().assume_init()
-            },
-        );
+        let mut andexable = AndexableArray::<A, MaybeUninit<Item>, SIZE>(PhantomData, unsafe {
+            std::mem::MaybeUninit::uninit().assume_init()
+        });
         let mut iter = intoiter.into_iter();
         for item in &mut andexable {
             if let Some(&fromiter) = iter.next() {
-                *item = fromiter;
+                item.write(fromiter);
             } else {
                 panic!("iterator too short for andexable type");
             }
@@ -504,7 +517,8 @@ impl<'a, A, Item: 'a + Copy, const SIZE: usize> core::iter::FromIterator<&'a Ite
         if iter.next().is_some() {
             panic!("iterator too long for andexable type");
         }
-        andexable
+
+        unsafe { std::mem::transmute_copy::<_, AndexableArray<A, Item, SIZE>>(&andexable) }
     }
 }
 

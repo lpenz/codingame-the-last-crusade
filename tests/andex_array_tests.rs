@@ -43,6 +43,17 @@ fn test_myarr() -> Result<()> {
 }
 
 #[test]
+fn test_debug() -> Result<()> {
+    let mut m = MyArray::default();
+    m[MyIdx::new::<2>()] = 5;
+    assert_eq!(
+        format!("{:?}", m),
+        "AndexableArray<u32>([0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0])"
+    );
+    Ok(())
+}
+
+#[test]
 fn test_conversions() -> Result<()> {
     let mut myarray1 = MyArray::from([3; 12]);
     let array1 = myarray1.as_mut();
@@ -78,12 +89,11 @@ fn test_iter() -> Result<()> {
     Ok(())
 }
 
-// Enable when we start using a version with array.into_iter() (Rust 2021)
-// #[test]
-// fn test_intoiter() -> Result<()> {
-//     let myarray = MyArray2::from([3; 12]);
-//     for item in myarray {
-//         assert_eq!(item, 3);
-//     }
-//     Ok(())
-// }
+#[test]
+fn test_intoiter() -> Result<()> {
+    let myarray = MyArray2::from([3; 12]);
+    for item in myarray {
+        assert_eq!(item, 3);
+    }
+    Ok(())
+}
