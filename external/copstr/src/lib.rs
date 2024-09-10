@@ -44,7 +44,7 @@
 //! string.replace_trunc("stringification");
 //! assert_eq!(string.as_str(), "string");
 //!
-//! // `copstr::Str` implements Deref<Target=str>, so all `str` //
+//! // `copstr::Str` implements Deref<Target=str>, so all `str`
 //! // methods are available:
 //! let split = format!("{:?}", string.split_at(3));
 //! assert_eq!(split, r#"("str", "ing")"#);
@@ -56,8 +56,22 @@
 //!     // ...
 //!     comment: copstr::Str<10>,
 //! }
+//!
+//! // We can (and should) create a type alias:
+//! type MyStr = copstr::Str::<4>;
+//!
+//! // We can create `copstr` in const contexts:
+//! const TEST: MyStr = MyStr::new_const("TEST");
 //! # Ok(()) }
 //! ```
+//!
+//! When using a const context, strings that don't fit generate a
+//! compilation error. For instance, the following doesn't compile:
+//!
+//! ```compile_fail
+//! const TEST_BAD: copstr::Str<3> = copstr::Str::<3>::new_const("TEST");
+//! ```
+//!
 
-mod copstr;
+pub mod copstr;
 pub use self::copstr::*;
